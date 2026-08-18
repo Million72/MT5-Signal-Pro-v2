@@ -2,7 +2,7 @@ import React from 'react'
 import SignalCard from './SignalCard.jsx'
 import { COLORS } from '../constants/colors.js'
 
-export default function ActiveSignals({ signals, category, statusFilter }) {
+export default function ActiveSignals({ signals, category, statusFilter, driftMap }) {
   const filtered = signals.filter((s) => {
     const catMatch = category === 'forex' ? s.market === 'forex' : s.market !== 'forex'
     const statusMatch = statusFilter === 'ALL' || s.status === statusFilter
@@ -20,7 +20,7 @@ export default function ActiveSignals({ signals, category, statusFilter }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {filtered.map((signal) => (
-        <SignalCard key={signal.id} signal={signal} />
+        <SignalCard key={signal.id} signal={signal} drift={driftMap?.[signal.symbol]} />
       ))}
     </div>
   )
