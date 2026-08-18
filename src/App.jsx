@@ -18,6 +18,7 @@ import { useMarketData } from './hooks/useMarketData.js'
 import { useSignalEngine } from './hooks/useSignalEngine.js'
 import { useStrictSignals } from './hooks/useStrictSignals.js'
 import { useOutcomeTracker } from './hooks/useOutcomeTracker.js'
+import { useLiveDrift } from './hooks/useLiveDrift.js'
 import { COLORS } from './constants/colors.js'
 import { formatCooldown } from './utils/formatters.js'
 
@@ -80,6 +81,7 @@ function AppInner() {
   } = useStrictSignals(timeframe, isConnected)
 
   const { stats: outcomeStats } = useOutcomeTracker(signals)
+  const driftMap = useLiveDrift(signals)
 
   // Append newly generated directional signals (BUY/SELL only) to
   // session history — WAIT entries aren't actionable, so they're
@@ -177,7 +179,7 @@ function AppInner() {
                 Scanning {progress.current}/{progress.total || '—'} markets…
               </div>
             ) : (
-              <ActiveSignals signals={signals} category={category} statusFilter={statusFilter} />
+              <ActiveSignals signals={signals} category={category} statusFilter={statusFilter} driftMap={driftMap} />
             )}
           </>
         )}
