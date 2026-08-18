@@ -36,7 +36,7 @@ export async function scanMarketSnapshot(symbol, timeframe) {
   const price = closes[closes.length - 1]
 
   const factorResult = runFactorVotes({ opens, highs, lows, closes })
-  const { status, confluence } = classifyStatus(factorResult)
+  let { status, confluence } = classifyStatus(factorResult)
 
   // HTF bias + structure badge (HH/HL vs LH/LL), for display badges
   const trend = analyzeTrend(highs, lows, closes)
@@ -46,14 +46,36 @@ export async function scanMarketSnapshot(symbol, timeframe) {
   let ladder = null
   let pips = null
   let riskReward = null
+  const MIN_LIVE_RR = 2.5
 
   if (status !== 'WAIT') {
     const direction = status
-    ladder = calculateTpSlLadder({ entry: price, direction, atr: factorResult.atr })
+    // Multipliers widened specifically so a 2.5+ R:R gate is achievable
+    // at all — the previous 1.6:1.2 ratio was fixed at ~1.33 always,
+    // which would silently reject every signal under a 2.5 minimum.
+    ladder = calculateTpSlLadder({
+      entry: price,
+      direction,
+      atr: factorResult.atr,
+      slMultiplier: 1.2,
+      tp1Multiplier: 3.2,
+      tp2Multiplier: 5.0
+    })
     riskReward = ladder.riskReward
-    pips = marketCategory(symbol) === 'forex'
-      ? distanceToPips(ladder.slDistance, symbol)
-      : Number(ladder.slDistance.toFixed(2)) // synthetic: raw index points
+
+    // Payoff gate: a lopsided vote isn't enough on its own — if the
+    // trade's own risk:reward is poor, it's downgraded back to WAIT
+    // rather than shown as an actionable BUY/SELL. Confluence measures
+    // agreement, not whether the trade is worth taking.
+    if (riskReward < MIN_LIVE_RR) {
+      status = 'WAIT'
+      ladder = null
+      riskReward = null
+    } else {
+      pips = marketCategory(symbol) === 'forex'
+        ? distanceToPips(ladder.slDistance, symbol)
+        : Number(ladder.slDistance.toFixed(2)) // synthetic: raw index points
+    }
   }
 
   return {
