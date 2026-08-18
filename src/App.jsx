@@ -17,6 +17,7 @@ import StrictSignalCard from './components/StrictSignalCard.jsx'
 import { useMarketData } from './hooks/useMarketData.js'
 import { useSignalEngine } from './hooks/useSignalEngine.js'
 import { useStrictSignals } from './hooks/useStrictSignals.js'
+import { useOutcomeTracker } from './hooks/useOutcomeTracker.js'
 import { COLORS } from './constants/colors.js'
 import { formatCooldown } from './utils/formatters.js'
 
@@ -77,6 +78,8 @@ function AppInner() {
     lockedSignals, scanning: strictScanning, progress: strictProgress,
     cooldownSeconds: strictCooldown, scan: strictScan, closePosition, scannedCount, lockedCount
   } = useStrictSignals(timeframe, isConnected)
+
+  const { stats: outcomeStats } = useOutcomeTracker(signals)
 
   // Append newly generated directional signals (BUY/SELL only) to
   // session history — WAIT entries aren't actionable, so they're
@@ -234,7 +237,7 @@ function AppInner() {
         )}
         {activeTab === 'mtf' && <MTFAnalysis timeframe={timeframe} />}
         {activeTab === 'history' && <SignalHistory history={history} />}
-        {activeTab === 'performance' && <PerformanceMetrics history={history} />}
+        {activeTab === 'performance' && <PerformanceMetrics history={history} outcomeStats={outcomeStats} />}
 
         <p style={{ textAlign: 'center', fontSize: 11, color: COLORS.textFaint, marginTop: 30 }}>
           Educational only · Trading involves risk · Use proper risk management
