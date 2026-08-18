@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { COLORS } from '../constants/colors.js'
 import { formatPrice } from '../utils/formatters.js'
+import { DRIFT_STATE_LABELS } from '../shared/driftCalculator.js'
 
 const FACTOR_LABELS = {
   emaFastSlow: 'EMA 20/50', emaSlowLong: 'EMA 50/200', priceVsEma20: 'Price vs EMA20',
@@ -11,7 +12,7 @@ const FACTOR_LABELS = {
   breakout: 'Range Breakout', doubleTopBottom: 'Double Top/Bottom', supplyDemand: 'Supply/Demand Zone'
 }
 
-export default function SignalCard({ signal }) {
+export default function SignalCard({ signal, drift }) {
   const [showFactors, setShowFactors] = useState(false)
   const isBuy = signal.status === 'BUY'
   const isSell = signal.status === 'SELL'
@@ -24,7 +25,9 @@ export default function SignalCard({ signal }) {
     return (
       <div style={{ background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 14, padding: 16, opacity: 0.6 }}>
         <div style={{ fontWeight: 700 }}>{signal.symbol}</div>
-        <div style={{ fontSize: 12, color: COLORS.textFaint, marginTop: 4 }}>No data available right now</div>
+        <div style={{ fontSize: 12, color: COLORS.textFaint, marginTop: 4 }}>
+          {errorMessage(signal.error)}
+        </div>
       </div>
     )
   }
@@ -81,12 +84,51 @@ export default function SignalCard({ signal }) {
 
       {!isWait && (
         <>
+          {/* Unmissable stop-loss callout — the exact level the R:R math
+              was built around. A tighter manual stop gets clipped by
+              normal noise even when the direction is correct. */}
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '10px 14px', marginBottom: 10, borderRadius: 10,
+            background: 'rgba(239,68,68,0.12)', border: `1.5px solid ${COLORS.sell}`
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.sell }}>
+              🛑 USE THIS EXACT STOP-LOSS
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 800, color: COLORS.sell }}>
+              {formatPrice(signal.stopLoss, signal.symbol)}
+            </span>
+          </div>
+
+          {drift && drift.state !== 'FRESH' && drift.state !== 'UNKNOWN' && (
+            <div style={{
+              padding: '10px 14px', marginBottom: 10, borderRadius: 10,
+              background: 'rgba(245,158,11,0.12)', border: `1.5px solid ${COLORS.warn}`
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.warn, marginBottom: 4 }}>
+                ⚠️ {DRIFT_STATE_LABELS[drift.state]}
+              </div>
+              {drift.state === 'DEGRADED' && (
+                <div style={{ fontSize: 11, color: COLORS.warn }}>
+                  Price has moved {drift.driftPct}% of the original stop distance since this fired.
+                  Entering now gives roughly 1:{drift.currentRR} — below the 2.5 minimum this signal
+                  needed to qualify. Consider skipping this one.
+                </div>
+              )}
+            </div>
+          )}
+          {drift && drift.state === 'FRESH' && (
+            <div style={{ fontSize: 11, color: COLORS.textFaint, marginBottom: 10 }}>
+              ✓ Still fresh — current R:R ≈ 1:{drift.currentRR}
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <MiniStat label="TP1" value={formatPrice(signal.takeProfit1, signal.symbol)} color={COLORS.buy} />
             <MiniStat label="TP2" value={formatPrice(signal.takeProfit2, signal.symbol)} color={COLORS.buy} />
           </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <MiniStat label="SL" value={formatPrice(signal.stopLoss, signal.symbol)} color={COLORS.sell} />
+            <MiniStat label="SL (again)" value={formatPrice(signal.stopLoss, signal.symbol)} color={COLORS.sell} />
             <MiniStat label={signal.market === 'forex' ? 'PIPS' : 'PTS'} value={signal.pips} color={COLORS.accentPurple} />
           </div>
         </>
@@ -171,4 +213,11 @@ function MiniStat({ label, value, color }) {
       <div style={{ fontSize: 13, fontWeight: 700, color }}>{value ?? '—'}</div>
     </div>
   )
-            }
+}
+
+function errorMessage(rawError) {
+  if (rawError === 'timeout') return 'Request timed out — likely rate-limited (shared demo app_id). Retried automatically, will retry again next scan.'
+  if (rawError === 'not_connected') return 'Not connected to Deriv — reconnecting…'
+  if (rawError === 'no_data' || rawError === 'insufficient_data') return 'Deriv returned no candles for this symbol/timeframe right now.'
+  return `Deriv error: ${rawError}`
+}
