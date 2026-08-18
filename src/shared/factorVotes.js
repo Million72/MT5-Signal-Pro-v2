@@ -120,8 +120,8 @@ export function runFactorVotes({ opens, highs, lows, closes }) {
 // a directional call when one side clearly dominates (>=65% confluence
 // among factors that gave a read at all); otherwise it's WAIT — visible
 // on the dashboard, but not actionable.
-const CONFLUENCE_THRESHOLD = 0.65
-const MIN_DIRECTIONAL_COVERAGE = 0.4 // at least 40% of factors must give a directional read
+const CONFLUENCE_THRESHOLD = 0.85
+const MIN_DIRECTIONAL_COVERAGE = 0.5 // at least 50% of factors must give a directional read
 
 export function classifyStatus({ bullVotes, bearVotes, totalFactors, directionalTotal }) {
   if (directionalTotal === 0 || directionalTotal / totalFactors < MIN_DIRECTIONAL_COVERAGE) {
@@ -138,5 +138,4 @@ export function classifyStatus({ bullVotes, bearVotes, totalFactors, directional
     return { status: 'SELL', confluence: Math.round(bearRatio * 100) }
   }
   return { status: 'WAIT', confluence: Math.round(Math.max(bullRatio, bearRatio) * 100) }
-    }
-  
+}
