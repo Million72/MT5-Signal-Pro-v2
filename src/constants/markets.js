@@ -4,12 +4,16 @@
 // translated to its actual API code before being sent.
 export const DERIV_SYMBOL_MAP = {
   // Volatility (synthetic) indices
+  VOL5: 'R_5',
   VOL10: 'R_10',
   VOL25: 'R_25',
   VOL50: 'R_50',
   VOL75: 'R_75',
   VOL100: 'R_100',
   'VOL10-1S': '1HZ10V',
+  'VOL5-1S': '1HZ5V',
+  'VOL15-1S': '1HZ15V',
+  'VOL30-1S': '1HZ30V',
   'VOL25-1S': '1HZ25V',
   'VOL50-1S': '1HZ50V',
   'VOL75-1S': '1HZ75V',
