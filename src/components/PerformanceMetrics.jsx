@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { COLORS } from '../constants/colors.js'
 import { marketCategory } from '../constants/markets.js'
 import { formatPrice } from '../utils/formatters.js'
+import { isBullish } from '../utils/statusHelpers.js'
 
 export default function PerformanceMetrics({ history, outcomeStats }) {
   const sessionStats = useMemo(() => {
@@ -20,7 +21,7 @@ export default function PerformanceMetrics({ history, outcomeStats }) {
 
     const avgConfidence = Math.round(history.reduce((s, h) => s + (h.confluence || 0), 0) / history.length)
     const avgRR = (history.reduce((s, h) => s + Number(h.riskReward || 0), 0) / history.length).toFixed(2)
-    const buyRatio = Math.round((history.filter((h) => h.direction === 'BUY' || h.status === 'BUY').length / history.length) * 100)
+    const buyRatio = Math.round((history.filter((h) => isBullish(h.direction) || isBullish(h.status)).length / history.length) * 100)
 
     return { byCategory, avgConfidence, avgRR, buyRatio, total: history.length }
   }, [history])
