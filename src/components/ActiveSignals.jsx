@@ -1,11 +1,12 @@
 import React from 'react'
 import SignalCard from './SignalCard.jsx'
 import { COLORS } from '../constants/colors.js'
+import { toFilterBucket } from '../utils/statusHelpers.js'
 
 export default function ActiveSignals({ signals, category, statusFilter, driftMap }) {
   const filtered = signals.filter((s) => {
     const catMatch = category === 'forex' ? s.market === 'forex' : s.market !== 'forex'
-    const statusMatch = statusFilter === 'ALL' || s.status === statusFilter
+    const statusMatch = statusFilter === 'ALL' || toFilterBucket(s.status) === statusFilter
     return catMatch && statusMatch
   })
 
