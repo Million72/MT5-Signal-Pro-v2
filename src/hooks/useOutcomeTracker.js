@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { trackSignal, checkOutcomes, getOutcomeStats } from '../engine/outcomeTracker.js'
+import { isActionable } from '../utils/statusHelpers.js'
 
 const CHECK_INTERVAL_MS = 60 * 1000 // check open positions against live price every minute
 
@@ -9,7 +10,7 @@ export function useOutcomeTracker(signals) {
 
   // Record any newly-fired BUY/SELL signals from the live scanner
   useEffect(() => {
-    const directional = signals.filter((s) => s.status === 'BUY' || s.status === 'SELL')
+    const directional = signals.filter((s) => isActionable(s.status))
     if (directional.length === 0) return
     directional.forEach(trackSignal)
     setStats(getOutcomeStats())
