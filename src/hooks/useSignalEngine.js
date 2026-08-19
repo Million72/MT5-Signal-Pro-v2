@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { scanAllMarketsLive } from '../engine/liveScanner.js'
 import { ALL_MARKETS } from '../constants/markets.js'
+import { isBullish, isBearish, isActionable } from '../utils/statusHelpers.js'
 
 const SCAN_INTERVAL_MS = 10 * 60 * 1000 // matches the "next X:XX" countdown
 
@@ -69,9 +70,9 @@ export function useSignalEngine(timeframe, isConnected) {
     return () => clearInterval(timer)
   }, [lastScan, isConnected, scan])
 
-  const buyCount = signals.filter((s) => s.status === 'BUY').length
-  const sellCount = signals.filter((s) => s.status === 'SELL').length
-  const waitCount = signals.filter((s) => s.status === 'WAIT').length
+  const buyCount = signals.filter((s) => isBullish(s.status)).length
+  const sellCount = signals.filter((s) => isBearish(s.status)).length
+  const waitCount = signals.filter((s) => !isActionable(s.status)).length
 
   // If nearly everything came back as an error, this is a systemic
   // connectivity/rate-limit issue, not "the market has no data" —
@@ -93,4 +94,4 @@ export function useSignalEngine(timeframe, isConnected) {
     waitCount,
     isSystemicFailure
   }
-    }
+}
