@@ -21,6 +21,7 @@ import { useOutcomeTracker } from './hooks/useOutcomeTracker.js'
 import { useLiveDrift } from './hooks/useLiveDrift.js'
 import { COLORS } from './constants/colors.js'
 import { formatCooldown } from './utils/formatters.js'
+import { isActionable } from './utils/statusHelpers.js'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -87,7 +88,7 @@ function AppInner() {
   // session history — WAIT entries aren't actionable, so they're
   // excluded from the history/performance views.
   useEffect(() => {
-    const directional = signals.filter((s) => s.status === 'BUY' || s.status === 'SELL')
+    const directional = signals.filter((s) => isActionable(s.status))
     if (directional.length > 0) {
       setHistory((prev) => {
         const existingIds = new Set(prev.map((h) => h.id))
@@ -255,4 +256,4 @@ export default function App() {
       <AppInner />
     </ErrorBoundary>
   )
-}
+  }
