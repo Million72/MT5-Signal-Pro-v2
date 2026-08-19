@@ -5,6 +5,7 @@
 
 import { derivService } from '../services/deriv.js'
 import { marketCategory } from '../constants/markets.js'
+import { isActionable } from '../utils/statusHelpers.js'
 
 const STORAGE_KEY = 'signal-outcomes-v1'
 const MAX_TRACKED = 300
@@ -34,7 +35,7 @@ function save(records) {
  * is still live.
  */
 export function trackSignal(signal) {
-  if (!signal || (signal.status !== 'BUY' && signal.status !== 'SELL')) return
+  if (!signal || !isActionable(signal.status)) return
   if (signal.takeProfit1 == null || signal.stopLoss == null) return
 
   const records = load()
@@ -45,7 +46,7 @@ export function trackSignal(signal) {
     id: signal.id,
     symbol: signal.symbol,
     market: marketCategory(signal.symbol),
-    direction: signal.status,
+    direction: signal.direction,
     entry: signal.entry,
     stopLoss: signal.stopLoss,
     takeProfit1: signal.takeProfit1,
