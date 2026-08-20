@@ -70,9 +70,9 @@ async function fetchCascade(symbol, entryTimeframe) {
   const [htfTf, mtfTf, ltfTf] = cascade
 
   const [htfData, mtfData, ltfData] = await Promise.all([
-    derivService.getCandles(symbol, htfTf, 500),
-    derivService.getCandles(symbol, mtfTf, 500),
-    derivService.getCandles(symbol, ltfTf, 500)
+    derivService.getCandles(symbol, htfTf, 300),
+    derivService.getCandles(symbol, mtfTf, 350),
+    derivService.getCandles(symbol, ltfTf, 150)
   ])
 
   return { htfTf, mtfTf, ltfTf, htfData, mtfData, ltfData }
