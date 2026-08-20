@@ -46,8 +46,8 @@ export function toDerivSymbol(displaySymbol) {
 
 export const MARKETS = {
   synthetic: [
-    'VOL10', 'VOL25', 'VOL50', 'VOL75', 'VOL100',
-    'VOL10-1S', 'VOL25-1S', 'VOL50-1S', 'VOL75-1S', 'VOL100-1S',
+    'VOL10', 'VOL25', 'VOL50', 'VOL75', 'VOL100', 'VOL5',
+    'VOL10-1S', 'VOL25-1S', 'VOL50-1S', 'VOL75-1S', 'VOL100-1S', 'VOL5-1S', 'VOL15-1S', 'VOL30-1S',
     'CRASH500', 'CRASH1000', 'BOOM500', 'BOOM1000',
     'JUMP10', 'JUMP25', 'JUMP50'
   ],
