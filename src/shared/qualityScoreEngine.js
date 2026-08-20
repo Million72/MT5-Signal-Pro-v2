@@ -125,26 +125,91 @@ export async function scoreMarket(symbol, entryTimeframe) {
   }
   earnedScore += WEIGHTS.mtfStructure
 
-  // --- MTF LOCATION (20%) — hard gate ---
+  // --- MTF LOCATION (20%) — hard gate, with move-stage awareness ---
+  // Implements: if price has already moved away from the favorable
+  // zone, classify HOW far and react accordingly — chase nothing,
+  // flag opposite-zone reversal risk, and only pass when price is
+  // genuinely at/near the favorable zone (whether arriving fresh or
+  // pulling back to it — both cases then wait on the LTF trigger below).
   const mtfAtr = calculateATR(mtf.highs, mtf.lows, mtf.closes)
   const zones = findSupplyDemandZones(mtf.highs, mtf.lows, mtf.closes, mtf.opens)
   const mtfPrice = mtf.closes[mtf.closes.length - 1]
   const zoneSignal = nearestZoneSignal(zones, mtfPrice, mtfAtr)
   const { resistanceLevels, supportLevels } = findKeyLevels(mtf.highs, mtf.lows)
-  const relevantLevels = direction === 'BUY' ? supportLevels : resistanceLevels
-  const nearLevel = priceNearLevel(mtfPrice, relevantLevels, mtfAtr)
 
-  const zoneFavorable = zoneSignal?.triggered && zoneSignal.direction === direction
-  const locationPass = zoneFavorable || !!nearLevel
+  const favorableLevels = direction === 'BUY' ? supportLevels : resistanceLevels
+  const oppositeLevels = direction === 'BUY' ? resistanceLevels : supportLevels
+  const favorableZoneType = direction === 'BUY' ? 'DEMAND' : 'SUPPLY'
+  const oppositeZoneType = direction === 'BUY' ? 'SUPPLY' : 'DEMAND'
+
+  const nearOppositeLevel = priceNearLevel(mtfPrice, oppositeLevels, mtfAtr, 0.5)
+  const inOppositeZone = zoneSignal?.triggered && zoneSignal.zone.type === oppositeZoneType
+
+  // Highest-risk case first: price is sitting right at the zone/level
+  // that works AGAINST this direction — running into overhead
+  // resistance (BUY) or a demand floor (SELL) means elevated reversal
+  // risk, regardless of how good everything else looks.
+  if (nearOppositeLevel || inOppositeZone) {
+    breakdown.mtfLocation = { pass: false, weight: WEIGHTS.mtfLocation, detail: 'at opposite zone — reversal risk' }
+    return {
+      status: 'WAIT', symbol, timeframe: entryTimeframe, htfTf, mtfTf, ltfTf,
+      breakdown, qualityScore: earnedScore, reason: 'at_opposite_zone_reversal_risk', direction,
+      moveStage: 'AT_OPPOSITE_ZONE'
+    }
+  }
+
+  const nearFavorableLevel = priceNearLevel(mtfPrice, favorableLevels, mtfAtr, 0.5)
+  const inFavorableZone = zoneSignal?.triggered && zoneSignal.zone.type === favorableZoneType
+
+  // Distance from the nearest favorable reference, in ATRs — computed
+  // even when outside the "near" threshold, purely to classify how far
+  // price has run from where this signal should ideally trigger.
+  const nearestFavorable = favorableLevels.reduce(
+    (best, l) => (best == null || Math.abs(mtfPrice - l.price) < Math.abs(mtfPrice - best.price) ? l : best),
+    null
+  )
+  let distanceInAtr = Infinity
+  if (inFavorableZone) {
+    const mid = (zoneSignal.zone.top + zoneSignal.zone.bottom) / 2
+    distanceInAtr = Math.abs(mtfPrice - mid) / mtfAtr
+  } else if (nearestFavorable) {
+    distanceInAtr = Math.abs(mtfPrice - nearestFavorable.price) / mtfAtr
+  }
+
+  let moveStage
+  let locationPass
+  if (distanceInAtr <= 0.5) {
+    // At the zone — whether this is a fresh arrival or a pullback after
+    // an earlier extended move, the correct action is identical: wait
+    // for the LTF trigger below, then act. So both cases pass the gate
+    // here and let the trigger step decide.
+    moveStage = 'AT_ZONE'
+    locationPass = true
+  } else if (distanceInAtr <= 1.5) {
+    moveStage = 'MID_MOVE'
+    locationPass = false
+  } else {
+    moveStage = 'EXTENDED_MOVE'
+    locationPass = false
+  }
+
   breakdown.mtfLocation = {
     pass: locationPass, weight: WEIGHTS.mtfLocation,
-    detail: zoneFavorable ? 'favorable zone' : nearLevel ? 'near key level' : 'no favorable location'
+    detail: moveStage === 'AT_ZONE' ? 'at favorable zone/level'
+      : moveStage === 'MID_MOVE' ? `${distanceInAtr.toFixed(1)} ATR from zone — monitor only`
+      : distanceInAtr === Infinity ? 'no favorable zone/level found' : `${distanceInAtr.toFixed(1)} ATR from zone — too far, no chase`
   }
 
   if (!locationPass) {
+    // MID_MOVE gets a softer WATCH status (trend may still continue,
+    // worth monitoring) while EXTENDED_MOVE is a firmer WAIT — matching
+    // the distinction between "caution" and "don't chase."
     return {
-      status: 'WAIT', symbol, timeframe: entryTimeframe, htfTf, mtfTf, ltfTf,
-      breakdown, qualityScore: earnedScore, reason: 'mtf_location_not_favorable', direction
+      status: moveStage === 'MID_MOVE' ? 'WATCH' : 'WAIT',
+      symbol, timeframe: entryTimeframe, htfTf, mtfTf, ltfTf,
+      breakdown, qualityScore: earnedScore,
+      reason: moveStage === 'MID_MOVE' ? 'mid_move_monitor_only' : 'extended_move_no_chase',
+      direction, moveStage
     }
   }
   earnedScore += WEIGHTS.mtfLocation
@@ -243,4 +308,4 @@ export async function scoreMarket(symbol, entryTimeframe) {
     market: marketCategory(symbol),
     timestamp: Date.now()
   }
-}
+      }
