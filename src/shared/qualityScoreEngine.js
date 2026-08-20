@@ -70,9 +70,9 @@ async function fetchCascade(symbol, entryTimeframe) {
   const [htfTf, mtfTf, ltfTf] = cascade
 
   const [htfData, mtfData, ltfData] = await Promise.all([
-    derivService.getCandles(symbol, htfTf, 120),
-    derivService.getCandles(symbol, mtfTf, 120),
-    derivService.getCandles(symbol, ltfTf, 150)
+    derivService.getCandles(symbol, htfTf, 500),
+    derivService.getCandles(symbol, mtfTf, 500),
+    derivService.getCandles(symbol, ltfTf, 500)
   ])
 
   return { htfTf, mtfTf, ltfTf, htfData, mtfData, ltfData }
@@ -156,9 +156,20 @@ export async function scoreMarket(symbol, entryTimeframe) {
   if (liquidityPass) earnedScore += WEIGHTS.liquidity
 
   // --- LTF ENTRY TRIGGER (15%) — hard gate ---
-  const ltfBos = detectBOS(ltf.highs, ltf.lows, ltf.closes)
-  const ltfChoch = detectCHoCH(ltf.highs, ltf.lows, ltf.closes)
-  const candle = detectCandlestickPattern(ltf.opens, ltf.highs, ltf.lows, ltf.closes)
+  // LTF is fetched with the full 500-candle history (for momentum/ATR/
+  // TP-SL stability below), but the entry trigger itself only looks at
+  // the most recent ~50 candles — a trigger from 400 candles ago isn't
+  // a live entry signal, it's stale history.
+  const LTF_TRIGGER_WINDOW = 50
+  const ltfRecent = {
+    opens: ltf.opens.slice(-LTF_TRIGGER_WINDOW),
+    highs: ltf.highs.slice(-LTF_TRIGGER_WINDOW),
+    lows: ltf.lows.slice(-LTF_TRIGGER_WINDOW),
+    closes: ltf.closes.slice(-LTF_TRIGGER_WINDOW)
+  }
+  const ltfBos = detectBOS(ltfRecent.highs, ltfRecent.lows, ltfRecent.closes)
+  const ltfChoch = detectCHoCH(ltfRecent.highs, ltfRecent.lows, ltfRecent.closes)
+  const candle = detectCandlestickPattern(ltfRecent.opens, ltfRecent.highs, ltfRecent.lows, ltfRecent.closes)
   const ltfTriggerEvent = ltfBos || ltfChoch || candle
   const ltfTriggerPass = ltfTriggerEvent?.direction === direction
   breakdown.ltfTrigger = { pass: ltfTriggerPass, weight: WEIGHTS.ltfTrigger, detail: ltfTriggerEvent?.type || 'none' }
