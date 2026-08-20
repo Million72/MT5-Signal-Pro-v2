@@ -179,7 +179,9 @@ function reasonText(reason) {
   const map = {
     htf_direction_neutral: 'no clear higher-timeframe trend right now',
     mtf_structure_not_confirmed: 'middle-timeframe structure has not confirmed the HTF direction',
-    mtf_location_not_favorable: 'price is not at a favorable zone/level on the middle timeframe',
+    at_opposite_zone_reversal_risk: 'price is sitting right at the opposite zone/level — elevated reversal risk',
+    mid_move_monitor_only: 'price has moved a moderate distance from the favorable zone — worth watching, not yet actionable',
+    extended_move_no_chase: 'price has moved too far from the favorable zone to chase',
     ltf_trigger_missing: 'no entry trigger has fired yet on the entry timeframe',
     below_minimum_risk_reward: 'risk:reward does not meet the minimum required'
   }
