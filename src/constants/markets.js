@@ -48,7 +48,7 @@ export const MARKETS = {
   synthetic: [
     'VOL10', 'VOL25', 'VOL50', 'VOL75', 'VOL100', 'VOL5',
     'VOL10-1S', 'VOL25-1S', 'VOL50-1S', 'VOL75-1S', 'VOL100-1S', 'VOL5-1S', 'VOL15-1S', 'VOL30-1S',
-   // 'CRASH500', 'CRASH1000', 'BOOM500', 'BOOM1000',
+    //'CRASH500', 'CRASH1000', 'BOOM500', 'BOOM1000',
     'JUMP10', 'JUMP25', 'JUMP50'
   ],
   forex: ['XAUUSD']
@@ -57,12 +57,12 @@ export const MARKETS = {
 
 export const ALL_MARKETS = [...MARKETS.synthetic, ...MARKETS.forex]
 
-//export const BOOM_CRASH_SYMBOLS = ['CRASH500', 'CRASH1000', 'BOOM500', 'BOOM1000']
+export const BOOM_CRASH_SYMBOLS = ['CRASH500', 'CRASH1000', 'BOOM500', 'BOOM1000']
 export const JUMP_SYMBOLS = ['JUMP10', 'JUMP25', 'JUMP50']
 export const VOLATILITY_SYMBOLS = ['VOL10', 'VOL25', 'VOL50', 'VOL75', 'VOL100']
 
 export function marketCategory(symbol) {
-  //if (BOOM_CRASH_SYMBOLS.includes(symbol)) return 'boom_crash'
+  if (BOOM_CRASH_SYMBOLS.includes(symbol)) return 'boom_crash'
   if (JUMP_SYMBOLS.includes(symbol)) return 'jump'
   if (VOLATILITY_SYMBOLS.includes(symbol)) return 'volatility'
   if (MARKETS.forex.includes(symbol)) return 'forex'
@@ -79,7 +79,7 @@ export const SYNTHETIC_DECIMALS = {
 }
 
 export const FOREX_DECIMALS = {
-  XAUUSD: 5
+  XAUUSD: 2
   //GBPUSD: 5, AUDUSD: 5, NZDUSD: 5, USDCAD: 5, USDCHF: 5,
   //EURGBP: 5, EURJPY: 3, GBPJPY: 3, USDJPY: 3
 }
